@@ -70,11 +70,13 @@ function getMode() {
 async function encrypt(text) {
         const now = new Date();
         console.log(`${now.toISOString()} – Encrypting ...`);
-        const activationTime = Date.now() + 2 * 60 * 1000;
-	const round = tlock.roundAt(activationTime, tlock.defaultChainInfo);
+        const activationTime = new Date(Date.now() + 86400 * 1000);
+        activationTime.setHours(5, 0, 0); 
+        console.log(`Chosen time: ${activationTime.toISOString()}`);
+	const round = tlock.roundAt(activationTime.valueOf(), tlock.defaultChainInfo);
 	const encrypted = await tlock.timelockEncrypt(round, Buffer.from(text, "utf-8"), client);
 	const filePath = path.join(__dirname, 'data', 'encrypted.txt');
-	fs.writeFileSync(filePath, encrypted + '\n' + String(activationTime), 'utf-8');
+	fs.writeFileSync(filePath, encrypted + '\n' + activationTime.toString(), 'utf-8');
 }
 
 async function decrypt() {
@@ -106,9 +108,9 @@ async function start() {
 	const filePath = path.join(__dirname, 'data', 'encrypted.txt');
         if (fs.existsSync(filePath)) {
 	    const fileContent = fs.readFileSync(filePath, 'utf-8').trim();
-            const activationTime = Number(fileContent.split('\n').pop());
-            if (activationTime > Date.now() + 10 * 1000) {
-                await sleep(activationTime - Date.now() + 1 * 60 * 1000);
+            const activationTime = Date.parse(fileContent.split('\n').pop());
+            if (activationTime.valueOf() > Date.now() + 10 * 1000) {
+                await sleep(activationTime.valueOf() - Date.now() + 1 * 60 * 1000);
             }
         }
         await encrypt(await decrypt());
