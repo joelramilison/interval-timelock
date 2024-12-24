@@ -1,4 +1,7 @@
 const tlock = require('tlock-js');
+const express = require('express')
+const app = express()
+const port = 3000
 const fs = require('fs');
 const path = require('path');
 
@@ -7,6 +10,14 @@ const client = tlock.mainnetClient();
 async function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+app.get('/health', (req, res) => {
+  res.send('Process running')
+})
+
+app.listen(port, () => {
+  console.log(`Listening on port ${port}`)
+})
 
 function getMode() {
     const dataDir = path.resolve(__dirname, 'data');
@@ -94,7 +105,7 @@ async function decrypt() {
 async function start() {
     const init = getMode();
     if (init && init.password && init.pin) {
-	
+        console.log("Password and PIN found");
         await encrypt(`${init.pin}:${init.password}`);
 	init.password = "";
 	init.pin = "";
@@ -102,11 +113,14 @@ async function start() {
         const pinPath = path.join(__dirname, 'data', 'pin.txt');
         fs.unlinkSync(passwordPath);
         fs.unlinkSync(pinPath);
+    } else {
+        console.log("No password and PIN found");
     }
 
     while (true) {
 	const filePath = path.join(__dirname, 'data', 'encrypted.txt');
         if (fs.existsSync(filePath)) {
+            console.log("encrypted.txt found");
 	    const fileContent = fs.readFileSync(filePath, 'utf-8').trim();
             const activationTime = Date.parse(fileContent.split('\n').pop());
             if (activationTime.valueOf() > Date.now() + 10 * 1000) {
